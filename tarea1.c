@@ -24,15 +24,15 @@ typedef struct
 
 // PROTOTIPOS =======================================
 void mostrarMenuPrincipal();
+void leer_nombre(char *); // Lee un string y lo capitaliza
 Categoria* buscar_categoria(List *, char *); 
-char* leerNombre(char *); // Lee un string y lo capitaliza
 void registrar_categorias(List *, char *); // 1
 void eliminar_categorias(List *); // 2
 void mostrar_categorias(List *); // 3
-void registrar_tareas(List *); // 4
+void registrar_tareas(List *, List *); // 4
 void leer_descripcion(char *); // Lee la descripcion de la tarea
 void guardar_hora(char *);
-void atender_siguente_tarea(List *); // 5
+void atender_siguente_tarea(List *, List *); // 5
 void mostrar_general(List *); // 6
 void filtrado_categoria(List *);  // 7
 void salir(); // 8
@@ -43,6 +43,7 @@ int main()
 {
   char opcion;
   List *Lista_cat = list_create(); // Lista para almacenar categorías
+  List *Lista_glob_tareas = list_create(); // Lista GLOBAL de tareas
 
   do {
     mostrarMenuPrincipal();
@@ -65,10 +66,10 @@ int main()
       mostrar_categorias(Lista_cat);
       break;
     case '4':
-      registrar_tareas(Lista_cat);
+      registrar_tareas(Lista_cat, Lista_glob_tareas);
       break;
     case '5':
-      atender_siguente_tarea(Lista_cat);
+      atender_siguente_tarea(Lista_cat, Lista_glob_tareas);
       break;
     case '6':
       mostrar_general(Lista_cat);
@@ -77,7 +78,7 @@ int main()
       filtrado_categoria(Lista_cat);
       break;
     case '8':
-      puts("Saliendo del sistema de gestión hospitalaria...");
+      puts("");
       break;
     default:
       puts("Opción no válida. Por favor, intente de nuevo.");
@@ -195,7 +196,7 @@ void mostrar_categorias(List *Lista_cat) // 3 s
   puts("=========================================================");
 }
 
-void registrar_tarea(List *Lista_cat) // 4
+void registrar_tareas(List *Lista_cat, List *Lista_glob_tareas) // 4
 {
   puts("Registrar nueva tarea");
   puts("Ingrese una de las categorías existentes (si no está, se creara la categoría)");
@@ -219,6 +220,7 @@ void registrar_tarea(List *Lista_cat) // 4
 
   actual_cate->pendientes++;
   list_pushBack(actual_cate->Tarea, nueva_tarea); // Se agrega al final para mantener la regla FIFO
+  list_pushBack(Lista_glob_tareas, nueva_tarea); // Se agrega la tarea a la lista global de tareas
 }
 
 void leer_descripcion(char *descripcion)
@@ -237,22 +239,22 @@ void guardar_hora(char *hora) // Funciones de la librería time.h
   // %H:%M:%S guardara algo como "HORA:MINUTO:SEGUNDO"
 }
 
-void atender_siguente_tarea(List *Lista_cat) // 5
+void atender_siguente_tarea(List *Lista_cate ,List *Lista_global_tareas) // 5
 {
-  char nombre[30];
-  leer_nombre(nombre);
-  Categoria *actual_cate = buscar_categoria(Lista_cat, nombre);
-  if (actual_cate->pendientes == 0)
+  Tarea *actual_tarea = list_first(Lista_global_tareas);
+  if (actual_tarea == NULL)
   {
     puts("¡Libre de pendientes!");
     return;
   }
 
-  Tarea *actual_tarea = list_first(actual_cate->Tarea);
   printf("Descripcion de la tarea: [%s] ", actual_tarea->descripcion);
   printf("| Categoría: [%s] |", actual_tarea->categoria);
   printf(" Registrada a las: [%s]", actual_tarea->hora);
+
+  Categoria *actual_cate = buscar_categoria(Lista_cate, actual_tarea->categoria);
   actual_cate->pendientes--;
+  
   free(actual_tarea); // Se libera la memoria usada por esa tarea
 }
 
