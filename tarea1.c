@@ -2,11 +2,14 @@
 #include "tdas/extra.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+#include <time.h>
 
 // STRUCT =======================================
 typedef struct
 {
-  char descripcion[200];
+  char descripcion[300];
   char hora[30];
   char categoria[30]
 } Tarea; // TAREA
@@ -14,25 +17,29 @@ typedef struct
 typedef struct
 {
   char nombre[30];
+  size_t pendientes;
   List *Tarea;
 } Categoria; // CATEGORIA
 // STRUCT =======================================
 
-// FUNCIONES PROT =======================================
+// PROTOTIPOS =======================================
 void mostrarMenuPrincipal();
-char* leerNombre(); // Lee un string y lo capitaliza
-void registrar_categorias(List *); // 1
+char* leerNombre(char *); // Lee un string y lo capitaliza
+void registrar_categorias(List *, char *); // 1
 void eliminar_categorias(List *); // 2
 void mostrar_categorias(List *); // 3
 void registrar_tareas(List *); // 4
+void leer_descripcion(char *); // Lee la descripcion de la tarea
+void guardar_hora(char *);
 void atender_siguente_tarea(List *); // 5
 void mostrar_general(List *); // 6
-void filtrado_categoria(List *); // 7
+void filtrado_categoria(List *);  // 7
 void salir(); // 8
-// FUNCIONES PROT =======================================
+// PROTOTIPOS =======================================
 
 // MAIN =======================================
-int main() {
+int main() 
+{
   char opcion;
   List *Lista_cat = list_create(); // Lista para almacenar categorías
 
@@ -44,19 +51,30 @@ int main() {
     switch (opcion) 
     {
     case '1':
-      registrar_categorias(Lista_cat);
+    {
+      char nombre[30];
+      leer_nombre(nombre); // Funcion para ingresar el nombre, capitalizarlo y guardarlo
+      registrar_categorias(Lista_cat, nombre);
+      break;
+    }
     case '2':
       eliminar_categorias(Lista_cat);
+      break;
     case '3':
       mostrar_categorias(Lista_cat);
+      break;
     case '4':
       registrar_tareas(Lista_cat);
+      break;
     case '5':
       atender_siguente_tarea(Lista_cat);
+      break;
     case '6':
       mostrar_general(Lista_cat);
+      break;
     case '7':
       filtrado_categoria(Lista_cat);
+      break;
     case '8':
       puts("Saliendo del sistema de gestión hospitalaria...");
       break;
@@ -93,53 +111,135 @@ void mostrarMenuPrincipal() // Menú principal
   puts("8) Salir");
 }
 
-char* leerNombre()
+void leer_nombre(char *nombre)
 {
-  char nombre[30];
-  scanf(" %c", &nombre);
+  puts("Ingrese el nombre: ");
+  scanf("%29s", nombre);
+
   if (nombre[0] == '\0') return;
-  nombre[0] = toupper(nombre[0]);
-  for (int i = 1 ; nombre[i] != '\0' ; i++)
-  {
-    nombre[i] = tolower(nombre[i]);
-  }
-  return nombre;
+  
+  nombre[0] = toupper(nombre[0]); // Capitalizar el nombre
+  for (int i = 1 ; nombre[i] != '\0' ; i++) nombre[i] = tolower(nombre[i]);
 }
 
-void registrar_categorias(List *Lista_cat) // 1
+void registrar_categorias(List *Lista_cat, char *nombre) // 1 
 {
-  char *nombre = leerNombre();
-  Categoria *Cat;
+  puts("Registrar nueva categoría");
   
-  printf("Registrar nueva categoría\n");
-  if (list_first(Lista_cat) == NULL)
+  Categoria *actual_cate = (Categoria*)list_first(Lista_cat);
+  
+  while (actual_cate != NULL) // Ciclo para buscar en la lista si existe o no la categoría
   {
-    strcpy(Cat->nombre, nombre);
-    Lista_cat = list_popFront(Cat);
+    if (strcmp(nombre, actual_cate->nombre) == 0)
+    {
+      printf("¡Ya existe la categoria %s!\n", nombre);
+      return;
+    }
+    actual_cate = list_next(Lista_cat);
   }
-  while (list_next(Lista_cat) != NULL)
-  {
-    if 
-  }
+
+  Categoria *nueva_cate = (Categoria*)malloc(sizeof(Categoria));
+  strcpy(nueva_cate->nombre, nombre); // Se guarda el nombre de la categoría
+  nueva_cate->pendientes = 0; // Se inicializa la variable que cuenta las tareas pendientes de esa categoria
+  nueva_cate->Tarea = list_create(); // Se crea una lista vacía donde se guardaran las tareas
+
+  list_pushBack(Lista_cat, nueva_cate); // Se agrega la categoría a la lista de categorías
+
+  puts("¡Categoría creada exitosamente!");
 }
 
 void eliminar_categorias(List *Lista_cat) // 2
 {
-  printf("Eliminar nueva categoría\n");
+  puts("Eliminar nueva categoría");
+  printf("Ingrese la categoría a eliminar: ");  
+  char nombre[30];
+  leer_nombre(nombre);
+
+  Categoria *actual_cate = list_first(Lista_cat);
+  while (actual_cate != NULL)
+  {
+    if (strcmp(nombre, actual_cate->nombre) == 0)
+    {
+      break;
+    }
+    actual_cate = list_next(Lista_cat);
+  }
+  if (actual_cate == NULL)
+  {
+    puts("¡No se encontro la categoría ingresada!");
+    return;
+  }
+  
+  list_clean(actual_cate->Tarea);
+  list_clean(actual_cate);
+
+  puts("¡Categoría eliminada exitosamente!");
 }
 
-void mostrar_categorias(List *Lista_cat) // 3
+void mostrar_categorias(List *Lista_cat) // 3 
 {
   printf("Categorías:\n");
+  puts("=========================================================");
+  Categoria *actual_cate = list_first(Lista_cat);
+  while (actual_cate != NULL)
+  {
+    printf("%s ----> Tareas pendientes: %zu \n", actual_cate->nombre, actual_cate->pendientes);
+    actual_cate = list_next(Lista_cat);
+  }
+  puts("=========================================================");
 }
 
 void registrar_tarea(List *Lista_cat) // 4
 {
-  printf("Categorías:\n");
+  puts("Registrar nueva tarea");
+  puts("Ingrese una de las categorías existentes (si no está, se creara la categoría)");
+  mostrar_categorias(Lista_cat);
+
+  char nombre[30];
+  leer_nombre(nombre);
+
+  Categoria *actual_cate = list_first(Lista_cat);
+
+  Tarea *nueva_tarea = (Tarea *)malloc(sizeof(Tarea));
+  strcpy(nueva_tarea->categoria, nombre); 
+  leer_descripcion(nueva_tarea->descripcion); // Funcion para leer la descripción
+  guardar_hora(nueva_tarea->hora); // Se usan las funciones de la librería time.h
+
+  while (actual_cate != NULL) // Ciclo para buscar la categoria
+  {
+    if (strcmp(nombre, actual_cate->nombre) == 0) break;
+    actual_cate = list_next(Lista_cat);
+  }
+  
+  if (actual_cate == NULL) // Si no está la categoría, se creara una nueva
+  {
+    registrar_categorias(Lista_cat, nombre);
+    actual_cate = list_first(Lista_cat); // La nueva categoría paso a ser la primera en la lista
+  }
+
+  actual_cate->pendientes++;
+  list_pushBack(actual_cate->Tarea, nueva_tarea); // Se agrega al final para mantener la regla FIFO
+}
+
+void leer_descripcion(char *descripcion)
+{
+  scanf("%299s", descripcion);
+}
+
+void guardar_hora(char *hora) // Funciones de la librería time.h
+{
+  // Pedimos el tiempo al sistema operativo
+  time_t tiempoActual = time(NULL);
+  struct tm *infoTiempo = localtime(&tiempoActual);
+    
+  // strftime formatea la hora y la guarda directamente en tu variable
+  strftime(hora, 30, "%H:%M:%S", infoTiempo); 
+  // %H:%M:%S guardara algo como "HORA:MINUTO:SEGUNDO"
 }
 
 void atender_siguente_tarea(List *Lista_cat) // 5
 {
+  Categoria *actual_cate = list_first(Lista_cat);
   printf("Categorías:\n");
 }
 
