@@ -24,6 +24,7 @@ typedef struct
 
 // PROTOTIPOS =======================================
 void mostrarMenuPrincipal();
+Categoria* buscar_categoria(List *, char *); 
 char* leerNombre(char *); // Lee un string y lo capitaliza
 void registrar_categorias(List *, char *); // 1
 void eliminar_categorias(List *); // 2
@@ -113,7 +114,7 @@ void mostrarMenuPrincipal() // Menú principal
 
 void leer_nombre(char *nombre)
 {
-  puts("Ingrese el nombre: ");
+  puts("Ingrese el nombre de la categoría: ");
   scanf("%29s", nombre);
 
   if (nombre[0] == '\0') return;
@@ -122,20 +123,32 @@ void leer_nombre(char *nombre)
   for (int i = 1 ; nombre[i] != '\0' ; i++) nombre[i] = tolower(nombre[i]);
 }
 
+Categoria* buscar_categoria(List *Lista_cat, char *nombre) // Función para buscar una categoría
+{
+  Categoria *actual_cat = (Categoria*)list_first(Lista_cat);
+
+  while (actual_cat != NULL) 
+  {
+    if (strcmp(nombre, actual_cat->nombre) == 0) 
+    {
+      return actual_cat; // Se encontro la categoría
+    }
+    actual_cat = (Categoria*)list_next(Lista_cat);
+    }
+
+    return NULL; // Retorna NULL si es que no se encontro
+}
+
 void registrar_categorias(List *Lista_cat, char *nombre) // 1 
 {
   puts("Registrar nueva categoría");
   
-  Categoria *actual_cate = (Categoria*)list_first(Lista_cat);
-  
-  while (actual_cate != NULL) // Ciclo para buscar en la lista si existe o no la categoría
+  Categoria *actual_cate = buscar_categoria(Lista_cat, nombre);
+
+  if (actual_cate != NULL)
   {
-    if (strcmp(nombre, actual_cate->nombre) == 0)
-    {
-      printf("¡Ya existe la categoria %s!\n", nombre);
-      return;
-    }
-    actual_cate = list_next(Lista_cat);
+    printf("¡Ya existe la categoria %s!\n", nombre);
+    return;
   }
 
   Categoria *nueva_cate = (Categoria*)malloc(sizeof(Categoria));
@@ -143,7 +156,7 @@ void registrar_categorias(List *Lista_cat, char *nombre) // 1
   nueva_cate->pendientes = 0; // Se inicializa la variable que cuenta las tareas pendientes de esa categoria
   nueva_cate->Tarea = list_create(); // Se crea una lista vacía donde se guardaran las tareas
 
-  list_pushBack(Lista_cat, nueva_cate); // Se agrega la categoría a la lista de categorías
+  list_pushFront(Lista_cat, nueva_cate); // Se agrega la categoría a la lista de categorías
 
   puts("¡Categoría creada exitosamente!");
 }
@@ -155,15 +168,8 @@ void eliminar_categorias(List *Lista_cat) // 2
   char nombre[30];
   leer_nombre(nombre);
 
-  Categoria *actual_cate = list_first(Lista_cat);
-  while (actual_cate != NULL)
-  {
-    if (strcmp(nombre, actual_cate->nombre) == 0)
-    {
-      break;
-    }
-    actual_cate = list_next(Lista_cat);
-  }
+  Categoria *actual_cate = buscar_categoria(Lista_cat, nombre);
+
   if (actual_cate == NULL)
   {
     puts("¡No se encontro la categoría ingresada!");
@@ -176,7 +182,7 @@ void eliminar_categorias(List *Lista_cat) // 2
   puts("¡Categoría eliminada exitosamente!");
 }
 
-void mostrar_categorias(List *Lista_cat) // 3 
+void mostrar_categorias(List *Lista_cat) // 3 s
 {
   printf("Categorías:\n");
   puts("=========================================================");
@@ -198,18 +204,12 @@ void registrar_tarea(List *Lista_cat) // 4
   char nombre[30];
   leer_nombre(nombre);
 
-  Categoria *actual_cate = list_first(Lista_cat);
+  Categoria *actual_cate = buscar_categoria(Lista_cat, nombre);
 
   Tarea *nueva_tarea = (Tarea *)malloc(sizeof(Tarea));
   strcpy(nueva_tarea->categoria, nombre); 
   leer_descripcion(nueva_tarea->descripcion); // Funcion para leer la descripción
   guardar_hora(nueva_tarea->hora); // Se usan las funciones de la librería time.h
-
-  while (actual_cate != NULL) // Ciclo para buscar la categoria
-  {
-    if (strcmp(nombre, actual_cate->nombre) == 0) break;
-    actual_cate = list_next(Lista_cat);
-  }
   
   if (actual_cate == NULL) // Si no está la categoría, se creara una nueva
   {
@@ -239,8 +239,21 @@ void guardar_hora(char *hora) // Funciones de la librería time.h
 
 void atender_siguente_tarea(List *Lista_cat) // 5
 {
-  Categoria *actual_cate = list_first(Lista_cat);
-  printf("Categorías:\n");
+  char nombre[30];
+  leer_nombre(nombre);
+  Categoria *actual_cate = buscar_categoria(Lista_cat, nombre);
+  if (actual_cate->pendientes == 0)
+  {
+    puts("¡Libre de pendientes!");
+    return;
+  }
+
+  Tarea *actual_tarea = list_first(actual_cate->Tarea);
+  printf("Descripcion de la tarea: [%s] ", actual_tarea->descripcion);
+  printf("| Categoría: [%s] |", actual_tarea->categoria);
+  printf(" Registrada a las: [%s]", actual_tarea->hora);
+  actual_cate->pendientes--;
+  free(actual_tarea); // Se libera la memoria usada por esa tarea
 }
 
 void mostrar_general(List *Lista_cat) // 6
