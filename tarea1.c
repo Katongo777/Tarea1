@@ -33,9 +33,10 @@ void mostrar_categorias(List *); // 3
 void registrar_tareas(List *, Queue *); // 4
 void leer_descripcion(char *); // Lee la descripcion de la tarea
 void guardar_hora(char *);
+void mostrar_tarea(Tarea *);
 void atender_siguente_tarea(List *, Queue *); // 5
-void mostrar_general(List *); // 6
-void filtrado_categoria(List *);  // 7
+void mostrar_general(Queue *); // 6
+void filtrado_categoria(Queue *);  // 7
 void salir(); // 8
 // PROTOTIPOS =======================================
 
@@ -73,13 +74,12 @@ int main()
       atender_siguente_tarea(Lista_cat, Cola_glob_tareas);
       break;
     case '6':
-      mostrar_general(Lista_cat);
+      mostrar_general(Cola_glob_tareas);
       break;
     case '7':
-      filtrado_categoria(Lista_cat);
+      filtrado_categoria(Cola_glob_tareas);
       break;
     case '8':
-      puts("");
       break;
     default:
       puts("Opción no válida. Por favor, intente de nuevo.");
@@ -89,6 +89,7 @@ int main()
   } while (opcion != '8');
 
   // Liberar recursos, si es necesario
+  queue_clean(Cola_glob_tareas);
   list_clean(Lista_cat);
 
   return 0;
@@ -206,7 +207,7 @@ void eliminar_tareas(Categoria *actual_cate, Queue *Cola_glob_tareas)
     }
   }
 
-  while (ueue_front(Cola_aux) != NULL)
+  while (queue_front(Cola_aux) != NULL)
   {
     actual_tarea = queue_remove(Cola_aux);
     queue_insert(Cola_glob_tareas, actual_tarea);
@@ -268,6 +269,13 @@ void guardar_hora(char *hora) // Funciones de la librería time.h
   // %H:%M:%S guardara algo como "HORA:MINUTO:SEGUNDO"
 }
 
+void mostrar_tarea(Tarea *actual_tarea)
+{
+  printf("Descripcion de la tarea: [%s] ", actual_tarea->descripcion);
+  printf("| Categoría: [%s] |", actual_tarea->categoria);
+  printf(" Registrada a las: [%s]", actual_tarea->hora);
+}
+
 void atender_siguente_tarea(List *Lista_cate, Queue *Cola_glob_tareas) // 5
 {
   Tarea *actual_tarea = queue_front(Cola_glob_tareas);
@@ -277,9 +285,7 @@ void atender_siguente_tarea(List *Lista_cate, Queue *Cola_glob_tareas) // 5
     return;
   }
 
-  printf("Descripcion de la tarea: [%s] ", actual_tarea->descripcion);
-  printf("| Categoría: [%s] |", actual_tarea->categoria);
-  printf(" Registrada a las: [%s]", actual_tarea->hora);
+  mostrar_tarea(actual_tarea);
 
   Categoria *actual_cate = buscar_categoria(Lista_cate, actual_tarea->categoria);
   actual_cate->pendientes--;
@@ -288,14 +294,44 @@ void atender_siguente_tarea(List *Lista_cate, Queue *Cola_glob_tareas) // 5
   free(actual_tarea); // Se libera la memoria usada por esa tarea
 }
 
-void mostrar_general(List *Lista_cat) // 6
+void mostrar_general(Queue *Cola_glob_tareas) // 6
 {
+  Queue *Cola_aux = queue_create(NULL);
+  Tarea *actual_tarea = queue_front(Cola_glob_tareas);
+  while (queue_front(Cola_glob_tareas) != NULL)
+  {
+    actual_tarea = queue_remove(Cola_glob_tareas);
+    queue_insert(Cola_aux, actual_tarea);
+    mostrar_tarea(actual_tarea);
+  }
+
+  while (queue_front(Cola_aux) != NULL)
+  {
+    actual_tarea = queue_remove(Cola_aux);
+    queue_insert(Cola_glob_tareas, actual_tarea);
+  }
   printf("Categorías:\n");
 }
 
-void filtrado_categoria(List *Lista_cat) // 7
+
+void filtrado_categoria(Queue *Cola_glob_tareas) // 7
 {
-  printf("Categorías:\n");
+  char nombre[30];
+  leer_nombre(nombre);
+  Queue *Cola_aux = queue_create(NULL);
+  Tarea *actual_tarea = queue_front(Cola_glob_tareas);
+  while (queue_front(Cola_glob_tareas) != NULL)
+  {
+    actual_tarea = queue_remove(Cola_glob_tareas);
+    queue_insert(Cola_aux, actual_tarea);
+    if (strcmp(nombre, actual_tarea->categoria) == 0) mostrar_tarea(actual_tarea);
+  }
+
+  while (queue_front(Cola_aux) != NULL)
+  {
+    actual_tarea = queue_remove(Cola_aux);
+    queue_insert(Cola_glob_tareas, actual_tarea);
+  }
 }
 
 void salir(List *Lista_cat) // 8
