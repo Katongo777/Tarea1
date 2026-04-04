@@ -1,5 +1,6 @@
 #include "tdas/list.h"
 #include "tdas/extra.h"
+#include "tdas/queue.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -18,7 +19,6 @@ typedef struct
 {
   char nombre[30];
   size_t pendientes;
-  List *Tarea;
 } Categoria; // CATEGORIA
 // STRUCT =======================================
 
@@ -27,12 +27,13 @@ void mostrarMenuPrincipal();
 void leer_nombre(char *); // Lee un string y lo capitaliza
 Categoria* buscar_categoria(List *, char *); 
 void registrar_categorias(List *, char *); // 1
-void eliminar_categorias(List *); // 2
+void eliminar_categorias(List *, Queue *); // 2
+void eliminar_tareas(Categoria *, Queue *);
 void mostrar_categorias(List *); // 3
-void registrar_tareas(List *, List *); // 4
+void registrar_tareas(List *, Queue *); // 4
 void leer_descripcion(char *); // Lee la descripcion de la tarea
 void guardar_hora(char *);
-void atender_siguente_tarea(List *, List *); // 5
+void atender_siguente_tarea(List *, Queue *); // 5
 void mostrar_general(List *); // 6
 void filtrado_categoria(List *);  // 7
 void salir(); // 8
@@ -43,7 +44,7 @@ int main()
 {
   char opcion;
   List *Lista_cat = list_create(); // Lista para almacenar categorías
-  List *Lista_glob_tareas = list_create(); // Lista GLOBAL de tareas
+  Queue *Cola_glob_tareas = queue_create(NULL); // Cola GLOBAL de tareas
 
   do {
     mostrarMenuPrincipal();
@@ -60,16 +61,16 @@ int main()
       break;
     }
     case '2':
-      eliminar_categorias(Lista_cat);
+      eliminar_categorias(Lista_cat, Cola_glob_tareas);
       break;
     case '3':
       mostrar_categorias(Lista_cat);
       break;
     case '4':
-      registrar_tareas(Lista_cat, Lista_glob_tareas);
+      registrar_tareas(Lista_cat, Cola_glob_tareas);
       break;
     case '5':
-      atender_siguente_tarea(Lista_cat, Lista_glob_tareas);
+      atender_siguente_tarea(Lista_cat, Cola_glob_tareas);
       break;
     case '6':
       mostrar_general(Lista_cat);
@@ -155,14 +156,13 @@ void registrar_categorias(List *Lista_cat, char *nombre) // 1
   Categoria *nueva_cate = (Categoria*)malloc(sizeof(Categoria));
   strcpy(nueva_cate->nombre, nombre); // Se guarda el nombre de la categoría
   nueva_cate->pendientes = 0; // Se inicializa la variable que cuenta las tareas pendientes de esa categoria
-  nueva_cate->Tarea = list_create(); // Se crea una lista vacía donde se guardaran las tareas
 
   list_pushFront(Lista_cat, nueva_cate); // Se agrega la categoría a la lista de categorías
 
   puts("¡Categoría creada exitosamente!");
 }
 
-void eliminar_categorias(List *Lista_cat) // 2
+void eliminar_categorias(List *Lista_cat, Queue *Cola_glob_tareas) // 2
 {
   puts("Eliminar nueva categoría");
   printf("Ingrese la categoría a eliminar: ");  
@@ -177,10 +177,40 @@ void eliminar_categorias(List *Lista_cat) // 2
     return;
   }
   
-  list_clean(actual_cate->Tarea);
-  list_clean(actual_cate);
+  eliminar_tareas(actual_cate, Cola_glob_tareas);
+  list_popCurrent(Lista_cat);
+  free(actual_cate);
 
   puts("¡Categoría eliminada exitosamente!");
+}
+
+void eliminar_tareas(Categoria *actual_cate, Queue *Cola_glob_tareas)
+{
+  /* Esta función crea una cola auxiliar, donde se pasaran los datos que no pertenezcan
+  */
+  char nombre[30];
+  strcpy(nombre, actual_cate->nombre);
+  Queue *Cola_aux = queue_create(NULL);
+  Tarea *actual_tarea = queue_front(Cola_glob_tareas);
+  while (queue_front(Cola_glob_tareas) != NULL)
+  {
+    actual_tarea = queue_remove(Cola_glob_tareas);
+    if (strcmp(actual_tarea->categoria, nombre) != 0)
+    {
+      queue_insert(Cola_aux, actual_tarea);
+    }
+    else 
+    {
+      actual_cate->pendientes--;
+      free(actual_tarea);
+    }
+  }
+
+  while (ueue_front(Cola_aux) != NULL)
+  {
+    actual_tarea = queue_remove(Cola_aux);
+    queue_insert(Cola_glob_tareas, actual_tarea);
+  }
 }
 
 void mostrar_categorias(List *Lista_cat) // 3 s
@@ -196,7 +226,7 @@ void mostrar_categorias(List *Lista_cat) // 3 s
   puts("=========================================================");
 }
 
-void registrar_tareas(List *Lista_cat, List *Lista_glob_tareas) // 4
+void registrar_tareas(List *Lista_cat, Queue *Cola_glob_tareas) // 4
 {
   puts("Registrar nueva tarea");
   puts("Ingrese una de las categorías existentes (si no está, se creara la categoría)");
@@ -219,8 +249,7 @@ void registrar_tareas(List *Lista_cat, List *Lista_glob_tareas) // 4
   }
 
   actual_cate->pendientes++;
-  list_pushBack(actual_cate->Tarea, nueva_tarea); // Se agrega al final para mantener la regla FIFO
-  list_pushBack(Lista_glob_tareas, nueva_tarea); // Se agrega la tarea a la lista global de tareas
+  queue_insert(Cola_glob_tareas, nueva_tarea); // Se agrega la tarea a la lista global de tareas
 }
 
 void leer_descripcion(char *descripcion)
@@ -239,9 +268,9 @@ void guardar_hora(char *hora) // Funciones de la librería time.h
   // %H:%M:%S guardara algo como "HORA:MINUTO:SEGUNDO"
 }
 
-void atender_siguente_tarea(List *Lista_cate ,List *Lista_global_tareas) // 5
+void atender_siguente_tarea(List *Lista_cate, Queue *Cola_glob_tareas) // 5
 {
-  Tarea *actual_tarea = list_first(Lista_global_tareas);
+  Tarea *actual_tarea = queue_front(Cola_glob_tareas);
   if (actual_tarea == NULL)
   {
     puts("¡Libre de pendientes!");
@@ -254,7 +283,8 @@ void atender_siguente_tarea(List *Lista_cate ,List *Lista_global_tareas) // 5
 
   Categoria *actual_cate = buscar_categoria(Lista_cate, actual_tarea->categoria);
   actual_cate->pendientes--;
-  
+
+  queue_remove(Cola_glob_tareas);
   free(actual_tarea); // Se libera la memoria usada por esa tarea
 }
 
