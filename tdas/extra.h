@@ -1,4 +1,4 @@
-#ifndef EXTRA_H
+#ifndef EXTRA_H 
 #define EXTRA_H
 
 #include <stdio.h>
@@ -41,7 +41,7 @@ char **leer_linea_csv(FILE *archivo, char separador);
 
 List *split_string(const char *str, const char *delim);
 
-// Función para limpiar la pantalla
+// Función par a limpiar la pantalla
 void limpiarPantalla();
 
 void presioneTeclaParaContinuar();

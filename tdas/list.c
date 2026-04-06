@@ -1,4 +1,4 @@
-#include "list.h"
+#include "list.h" 
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -98,8 +98,7 @@ void list_pushCurrent(List *L, void *data) {
   L->size++;
 }
 
-void list_sortedInsert(List *L, void *data,
-                       int (*lower_than)(void *data1, void *data2)) {
+void list_sortedInsert(List *L, void *data, int (*lower_than)(void *data1, void *data2)) {
   if (L == NULL) {
     return; // Lista no inicializada
   }
