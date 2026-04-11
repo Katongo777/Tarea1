@@ -86,7 +86,7 @@ int main()
     case '8':
       break;
     default:
-      puts("Opción no valida. Por favor, intente de nuevo.");
+      puts("Opcion no valida. Por favor, intente de nuevo.");
     }
     presioneTeclaParaContinuar();
   } while (opcion != '8');
