@@ -8,11 +8,6 @@
 #include <time.h>
 
 /*
-¡¡¡SE QUITAN LOS TILDES DE LOS PUTS/PRINTF PARA QUE AL MOSTRAR
-SE VEA BIEN!!!
-*/
-
-/*
 Repositorio de GitHub
 https://github.com/Katongo777/Tarea1
 */
@@ -103,7 +98,6 @@ int main()
   return 0;
 }
 // MAIN =======================================
-
 
 // FUNCIONES =======================================
 void mostrarMenuPrincipal() // Menú principal
@@ -237,7 +231,7 @@ void eliminar_tareas(Categoria *actual_cate, Queue *Cola_glob_tareas)
     actual_tarea = queue_remove(Cola_aux);
     queue_insert(Cola_glob_tareas, actual_tarea);
   }
-  free(Cola_aux); // Se libera la memoria usada por la cola auxiliar
+  queue_clean(Cola_aux); // Se libera la memoria usada por la cola auxiliar
 }
 
 void mostrar_categorias(List *Lista_cat) // === 3 ===
@@ -352,9 +346,8 @@ void mostrar_general(Queue *Cola_glob_tareas) // === 6 ===
     actual_tarea = queue_remove(Cola_aux);
     queue_insert(Cola_glob_tareas, actual_tarea);
   }
-  free(Cola_aux); // Se libera la memoria usada por la cola auxiliar
+  queue_clean(Cola_aux); // Se libera la memoria usada por la cola auxiliar
 }
-
 
 void filtrado_categoria(Queue *Cola_glob_tareas) // === 7 ===
 {
@@ -380,6 +373,6 @@ void filtrado_categoria(Queue *Cola_glob_tareas) // === 7 ===
     actual_tarea = queue_remove(Cola_aux);
     queue_insert(Cola_glob_tareas, actual_tarea);
   }
-  free(Cola_aux); // Se libera la memoria usada por la cola auxiliar
+  queue_clean(Cola_aux); // Se libera la memoria usada por la cola auxiliar
 }
 // FUNCIONES =======================================
